@@ -196,6 +196,8 @@ class ComponentBase {
   // Get Electron attachments and velocities. 
   virtual bool ElectronAttachment(const double /* x */, const double /* y */, const double /* z */,
                           double& eta){eta = 0; return false;};
+  virtual bool ElectronLorentzAngle(const double /* x */, const double /* y */, const double /* z */,
+                          double& lor){lor = 0; return false;};
   virtual bool HoleAttachment(const double /* x */, const double /* y */, const double /* z */, 
 		          double& eta){eta = 0; return false;};
   virtual void ElectronVelocity(const double /* x */, const double /* y */, const double /* z */,

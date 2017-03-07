@@ -906,7 +906,7 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
 }
 
 bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
-                                  std::vector<double>& etas) {
+                                  std::vector<double>& etas, std::vector<double>& lors) {
   // Locations and weights for 6-point Gaussian integration
   const double tg[6] = {-0.932469514203152028, -0.661209386466264514,
                         -0.238619186083196909,  0.238619186083196909,
@@ -932,6 +932,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
     double vdz = 0.;
     alphas[i] = 0.;
     etas[i] = 0.;
+    lors[i] = 0.;
     for (unsigned int j = 0; j < 6; ++j) {
       const double x = m_drift[i].x + 0.5 * (1. + tg[j]) * delx;
       const double y = m_drift[i].y + 0.5 * (1. + tg[j]) * dely;
@@ -960,9 +961,9 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
         by *= Tesla2Internal;
         bz *= Tesla2Internal;
       }
-      // Get drift velocity, Townsend and attachment coefficients.
+      // Get drift velocity, Townsend, attachment coefficients, Lorentz angles.
       double vx = 0., vy = 0., vz = 0.;
-      double alpha = 0., eta = 0.;
+      double alpha = 0., eta = 0., lor = 0.;
       if (m_useTcadTrapping) {
         // Only one component with active traps and velocity map is assumed to
         // be attached to AvalancheMC.
@@ -978,6 +979,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
               trapMed->ElectronVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
             }
             trapMed->ElectronTownsend(ex, ey, ez, bx, by, bz, alpha);
+            trapMed->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, alpha);
             trapCmp->ElectronAttachment(x, y, z, eta);
           } else {
             if (trapCmp->IsVelocityActive()) {
@@ -994,6 +996,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
           medium->ElectronVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
           medium->ElectronTownsend(ex, ey, ez, bx, by, bz, alpha);
           medium->ElectronAttachment(ex, ey, ez, bx, by, bz, eta);
+          medium->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, lor);
         } else {
           medium->HoleVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
           medium->HoleTownsend(ex, ey, ez, bx, by, bz, alpha);
@@ -1005,6 +1008,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
       vdz += wg[j] * vz;
       alphas[i] += wg[j] * alpha;
       etas[i] += wg[j] * eta;
+      lor[i] += wg[j] * lor;
     }
     // Compute the scaling factor for the projected length.
     double scale = 1.;
@@ -1023,11 +1027,20 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
     }
     alphas[i] *= 0.5 * del * scale;
     etas[i] *= 0.5 * del * scale;
+    lors[i] *= 0.5 * del * scale;
   }
 
   // Skip equilibration if projection has not been requested.
   if (!m_useEquilibration) return true;
   if (!Equilibrate(alphas)) {
+    if (m_debug) {
+      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
+                << "    Unable to even out alpha steps.\n"
+                << "    Calculation is probably inaccurate.\n";
+    }
+    return false;
+  }
+  if (!Equilibrate(etas)) {
     if (m_debug) {
       std::cerr << m_className << "::ComputeAlphaEta:\n"
                 << "    Unable to even out alpha steps.\n"
@@ -1035,7 +1048,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
     }
     return false;
   }
-  if (!Equilibrate(etas)) {
+  if (!Equilibrate(lors)) {
     if (m_debug) {
       std::cerr << m_className << "::ComputeAlphaEta:\n"
                 << "    Unable to even out alpha steps.\n"
