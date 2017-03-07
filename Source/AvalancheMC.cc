@@ -814,8 +814,9 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
   const unsigned int nPoints = m_drift.size();
   std::vector<double> alphas(nPoints, 0.);
   std::vector<double> etas(nPoints, 0.);
+  std::vector<double> lors(nPoints, 0.);
   // Compute the integrated Townsend and attachment coefficients.
-  if (!ComputeAlphaEta(type, alphas, etas)) return false;
+  if (!ComputeAlphaEtaLor(type, alphas, etas, lors)) return false;
 
   // Subdivision of a step
   const double probth = 0.01;
@@ -828,10 +829,11 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
     m_drift[i].nh = 0;
     m_drift[i].ni = 0;
     // Compute the number of subdivisions.
-    const int nDiv = std::max(int((alphas[i] + etas[i]) / probth), 1);
+    const int nDiv = std::max(int((alphas[i] + etas[i]+lors[i]) / probth), 1);
     // Compute the probabilities for gain and loss.
     const double palpha = std::max(alphas[i] / nDiv, 0.);
     const double peta = std::max(etas[i] / nDiv, 0.);
+    const double plor = std::max(lor[i] / nDiv, 0.);
     // Set initial number of electrons/ions.
     int neInit = ne;
     int niInit = ni;
@@ -905,7 +907,7 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
   return true;
 }
 
-bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
+bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas,
                                   std::vector<double>& etas, std::vector<double>& lors) {
   // Locations and weights for 6-point Gaussian integration
   const double tg[6] = {-0.932469514203152028, -0.661209386466264514,
@@ -918,6 +920,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
   const unsigned int nPoints = m_drift.size();
   alphas.resize(nPoints, 0.);
   etas.resize(nPoints, 0.);
+  lors.resize(nPoints, 0.);
   if (nPoints < 2) return true;
   // Loop over the drift line.
   for (unsigned int i = 0; i < nPoints - 1; ++i) {
@@ -946,7 +949,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
       if (status != 0) {
         // Check if this point is the last but one.
         if (i < nPoints - 2) {
-          std::cerr << m_className << "::ComputeAlphaEta:    Got status \n"
+          std::cerr << m_className << "::ComputeAlphaEtaLor:    Got status \n"
                     << status << " at segment " << j + 1 
                     << "/6, drift point " << i + 1 << "/" << nPoints << ".\n";
           return false;
@@ -1042,7 +1045,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
   }
   if (!Equilibrate(etas)) {
     if (m_debug) {
-      std::cerr << m_className << "::ComputeAlphaEta:\n"
+      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
                 << "    Unable to even out alpha steps.\n"
                 << "    Calculation is probably inaccurate.\n";
     }
@@ -1050,7 +1053,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
   }
   if (!Equilibrate(lors)) {
     if (m_debug) {
-      std::cerr << m_className << "::ComputeAlphaEta:\n"
+      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
                 << "    Unable to even out alpha steps.\n"
                 << "    Calculation is probably inaccurate.\n";
     }

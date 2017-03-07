@@ -224,7 +224,7 @@ class AvalancheMC {
   /// Compute multiplication and losses along the current drift line.
   bool ComputeGainLoss(const int type, int& status);
   /// Compute Lorentz angle, Townsend and attachment coefficients along the current drift line.
-  bool ComputeAlphaEta(const int q, std::vector<double>& alphas,
+  bool ComputeAlphaEtaLor(const int q, std::vector<double>& alphas,
                        std::vector<double>& etas, std::vector<double>& lors);
   bool Equilibrate(std::vector<double>& alphas) const; 
   /// Compute the induced signal for the current drift line.
