@@ -979,7 +979,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
               trapMed->ElectronVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
             }
             trapMed->ElectronTownsend(ex, ey, ez, bx, by, bz, alpha);
-            trapMed->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, alpha);
+            trapMed->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, lor);
             trapCmp->ElectronAttachment(x, y, z, eta);
           } else {
             if (trapCmp->IsVelocityActive()) {
@@ -1008,7 +1008,7 @@ bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
       vdz += wg[j] * vz;
       alphas[i] += wg[j] * alpha;
       etas[i] += wg[j] * eta;
-      lor[i] += wg[j] * lor;
+      lors[i] += wg[j] * lor;
     }
     // Compute the scaling factor for the projected length.
     double scale = 1.;
