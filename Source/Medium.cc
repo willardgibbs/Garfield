@@ -42,6 +42,7 @@ Medium::Medium()
   m_hasElectronDiffLong = false;
   m_hasElectronDiffTrans = false;
   m_hasElectronAttachment = false;
+  m_hasElectronLorentzAngle = false;
   m_hasElectronDiffTens = false;
 
   m_hasHoleVelocityE = false;
@@ -70,6 +71,8 @@ Medium::Medium()
   m_extrHighMobility = 1;
   m_extrLowDissociation = 0;
   m_extrHighDissociation = 1;
+  m_extrLowLorentzAngle = 0;
+  m_extrHighLorentzAngle = 1;
 
   m_intpVelocity = 2;
   m_intpDiffusion = 2;
@@ -77,8 +80,9 @@ Medium::Medium()
   m_intpAttachment = 2;
   m_intpMobility = 2;
   m_intpDissociation = 2;
+  m_intpLorentzAngle = 2;
 
-  thrElectronTownsend = thrElectronAttachment = 0;
+  thrElectronTownsend = thrElectronAttachment = thrElectronLorentzAngle = 0;
   thrHoleTownsend = thrHoleAttachment = 0;
   thrIonDissociation = 0;
 
@@ -646,6 +650,74 @@ bool Medium::ElectronAttachment(const double ex, const double ey,
 
   // Apply scaling.
   eta = ScaleAttachment(eta);
+  return true;
+}
+
+bool Medium::ElectronLorentzAngle(const double ex, const double ey,
+                                const double ez, const double bx,
+                                const double by, const double bz, double& lor) {
+
+  lor = 0.;
+  if (!m_hasElectronLorentzAngle) return false;
+  // Compute the magnitude of the electric field.
+  const double e = sqrt(ex * ex + ey * ey + ez * ez);
+  const double e0 = ScaleElectricField(e);
+  if (e < Small || e0 < Small) return true;
+
+  if (m_map2d) {
+    // Compute the magnitude of the magnetic field.
+    const double b = sqrt(bx * bx + by * by + bz * bz);
+
+    // Compute the angle between B field and E field.
+    double ebang = 0.;
+    if (e * b > 0.) {
+      const double eb = fabs(ex * bx + ey * by + ez * bz);
+      if (eb > 0.2 * e * b) {
+        ebang = asin(std::min(
+            1., sqrt(pow(ex * by - ey * bx, 2) + pow(ex * bz - ez * bx, 2) +
+                     pow(ez * by - ey * bz, 2)) /
+                    (e * b)));
+      } else {
+        ebang = acos(std::min(1., eb / (e * b)));
+      }
+    } else {
+      ebang = m_bAngles[0];
+    }
+    // Interpolate.
+    if (e0 < m_eFields[thrElectronLorentzAngle]) {
+      if (!Numerics::Boxin3(tabElectronLorentzAngle, m_bAngles, m_bFields, m_eFields,
+                            m_bAngles.size(), m_bFields.size(), m_eFields.size(), ebang, b, e0, lor,
+                            1)) {
+        lor = -30.;
+      }
+    } else {
+      if (!Numerics::Boxin3(tabElectronLorentzAngle, m_bAngles, m_bFields, m_eFields,
+                            m_bAngles.size(), m_bFields.size(), m_eFields.size(), ebang, b, e0, lor,
+                            m_intpLorentzAngle)) {
+        lor = -30.;
+      }
+    }
+  } else {
+    // Interpolate.
+    if (e0 < m_eFields[thrElectronLorentzAngle]) {
+      lor = Interpolate1D(e0, tabElectronLorentzAngle[0][0], m_eFields, 1,
+                          m_extrLowLorentzAngle, m_extrHighLorentzAngle);
+    } else {
+      lor =
+          Interpolate1D(e0, tabElectronLorentzAngle[0][0], m_eFields,
+                        m_intpLorentzAngle, 
+                        m_extrLowLorentzAngle, m_extrHighLorentzAngle);
+    }
+  }
+
+  if (lor < -20.) {
+    lor = 0.;
+  } else {
+    lor = exp(lor);
+  }
+
+  // Apply scaling.
+  lor = ScaleLorentzAngle(lor);
   return true;
 }
 
@@ -1489,6 +1561,12 @@ void Medium::ResetElectronAttachment() {
   m_hasElectronAttachment = false;
 }
 
+void Medium::ResetElectronLorentzAngle() {
+
+  tabElectronLorentzAngle.clear();
+  m_hasElectronLorentzAngle = false;
+}
+
 void Medium::ResetHoleVelocity() {
 
   tabHoleVelocityE.clear();
@@ -1757,6 +1835,9 @@ void Medium::SetFieldGrid(const std::vector<double>& efields,
   CloneTable(tabElectronAttachment, efields, bfields, angles, m_intpAttachment,
              m_extrLowAttachment, m_extrHighAttachment, -30.,
              "electron attachment coefficient");
+  CloneTable(tabElectronLorentzAngle, efields, bfields, angles, m_intpLorentzAngle,
+             m_extrLowLorentzAngle, m_extrHighLorentzAngle, 0.,
+             "electron attachment coefficient");
   if (m_hasElectronDiffTens) {
     CloneTensor(tabElectronDiffTens, 6, efields, bfields, angles, m_intpDiffusion,
                 m_extrLowDiffusion, m_extrHighDiffusion, 0.,
@@ -1990,6 +2071,30 @@ bool Medium::GetElectronAttachment(const unsigned int ie,
   }
 
   eta = tabElectronAttachment[ia][ib][ie];
+  return true;
+}
+
+bool Medium::GetElectronLorentzAngle(const unsigned int ie, 
+                                   const unsigned int ib, 
+                                   const unsigned int ia, double& lor) {
+
+  if (ie >= m_eFields.size() || ib >= m_bFields.size() || ia >= m_bAngles.size()) {
+    std::cerr << m_className << "::GetElectronLorentzAngle:\n";
+    std::cerr << "     Index (" << ie << ", " << ib << ", " << ia
+              << ") out of range.\n";
+    lor = 0.;
+    return false;
+  }
+  if (!m_hasElectronLorentzAngle) {
+    if (m_debug) {
+      std::cerr << m_className << "::GetElectronLorentzAngle:\n";
+      std::cerr << "    Data not available.\n";
+    }
+    lor = 0.;
+    return false;
+  }
+
+  lor = tabElectronLorentzAngle[ia][ib][ie];
   return true;
 }
 
