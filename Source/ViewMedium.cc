@@ -263,6 +263,17 @@ void ViewMedium::PlotElectronAttachment(const char xaxis, const double e,
   m_canvas->Update();
 }
 
+void ViewMedium::PlotElectronLorentzAngle(const char xaxis, const double e,
+                                        const double b, const double a) {
+
+  bool keep = false;
+  SetupCanvas();
+  AddFunction(m_eMin, m_eMax, 0., 0., keep, m_labele,
+              "Lorentz Angle", 
+              ElectronLorentzAngle, xaxis, e, b, a);
+  m_canvas->Update();
+}
+
 void ViewMedium::PlotHoleAttachment(const char xaxis, const double e,
                                     const double b, const double a) {
 
@@ -464,6 +475,10 @@ void ViewMedium::AddFunction(const double xmin, const double xmax,
           ok = m_medium->GetElectronAttachment(i, bpoint, apoint, value);
           value = m_medium->ScaleAttachment(exp(value));
           break;
+        case ElectronLorentzAngle:
+          ok = m_medium->GetElectronLorentzAngle(i, bpoint, apoint, value);
+          value = m_medium->ScaleLorentzAngle(exp(value));
+          break;
         case HoleVelocityE:
           ok = m_medium->GetHoleVelocityE(i, bpoint, apoint, value);
           value = m_medium->ScaleVelocity(value);
@@ -656,6 +671,10 @@ double ViewMedium::EvaluateFunction(double* pos, double* par) {
       if (!m_medium->ElectronAttachment(x, 0, 0, 0, 0, 0, a)) return 0.;
       y = a;
       break;
+    case ElectronLorentzAngle:
+      if (!m_medium->ElectronLorentzAngle(x, 0, 0, 0, 0, 0, a)) return 0.;
+      y = a;
+      break;
     case HoleVelocityE:
       if (!m_medium->HoleVelocity(x, 0, 0, 0, 0, 0, a, b, c)) return 0.;
       y = a;
@@ -780,7 +799,7 @@ double ViewMedium::EvaluateFunction(double* pos, double* par) {
 
 int ViewMedium::GetColor(const unsigned int prop) const {
 
-  if (prop == ElectronLongitudinalDiffusion || prop == ElectronAttachment) {
+  if (prop == ElectronLongitudinalDiffusion || prop == ElectronAttachment || prop == ElectronLorentzAngle) {
     return plottingEngine.GetRootColorLine1();
   } else if (prop == HoleLongitudinalDiffusion || prop == HoleAttachment || 
              prop == IonLongitudinalDiffusion) {
