@@ -338,7 +338,7 @@ class Medium {
   bool m_hasElectronVelocityE, m_hasElectronVelocityB, m_hasElectronVelocityExB;
   bool m_hasElectronDiffLong, m_hasElectronDiffTrans, m_hasElectronDiffTens;
   bool m_hasElectronAttachment;
-  bool m_hasElectronLoretzAngle;
+  bool m_hasElectronLorentzAngle;
   std::vector<std::vector<std::vector<double> > > tabElectronVelocityE;
   std::vector<std::vector<std::vector<double> > > tabElectronVelocityExB;
   std::vector<std::vector<std::vector<double> > > tabElectronVelocityB;
@@ -346,7 +346,7 @@ class Medium {
   std::vector<std::vector<std::vector<double> > > tabElectronDiffTrans;
   std::vector<std::vector<std::vector<double> > > tabElectronTownsend;
   std::vector<std::vector<std::vector<double> > > tabElectronAttachment;
-  std::vector<std::vector<std::vector<double> > > tabElectronLoretzAngle;
+  std::vector<std::vector<std::vector<double> > > tabElectronLorentzAngle;
   std::vector<std::vector<std::vector<std::vector<double> > > >
       tabElectronDiffTens;
 
@@ -388,7 +388,7 @@ class Medium {
   unsigned int m_extrLowAttachment, m_extrHighAttachment;
   unsigned int m_extrLowMobility, m_extrHighMobility;
   unsigned int m_extrLowDissociation, m_extrHighDissociation;
-  unsigned int m_extrLowLoretzAngle, m_extrHighLoretzAngle;
+  unsigned int m_extrLowLorentzAngle, m_extrHighLorentzAngle;
 
   // Interpolation methods
   unsigned int m_intpVelocity;
@@ -397,7 +397,7 @@ class Medium {
   unsigned int m_intpAttachment;
   unsigned int m_intpMobility;
   unsigned int m_intpDissociation;
-  unsigned int m_intpLoretzAngle;
+  unsigned int m_intpLorentzAngle;
 
   double Interpolate1D(const double e, const std::vector<double>& table,
                        const std::vector<double>& fields, 
