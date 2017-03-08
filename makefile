@@ -36,8 +36,8 @@ FFLAGS += -O2
 # CXXFLAGS += -g
 # FFLAGS += -g
 # Profiling flag
- CXXFLAGS += -pg
-
+CXXFLAGS += -pg
+CXXFLAGS += -std=c++11
 # Linking flags
 LDFLAGS = `root-config --glibs` `root-config --ldflags`-lGeom \
 	-lgfortran -lm
