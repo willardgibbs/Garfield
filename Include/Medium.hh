@@ -376,6 +376,7 @@ class Medium {
   // Thresholds for Townsend, attachment and dissociation coefficients.
   int thrElectronTownsend;
   int thrElectronAttachment;
+  int thrElectronLorentzAngle;
 
   int thrHoleTownsend;
   int thrHoleAttachment;

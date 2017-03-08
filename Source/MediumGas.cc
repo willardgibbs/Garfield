@@ -834,6 +834,8 @@ bool MediumGas::LoadGasFile(const std::string& filename) {
         token = strtok(NULL, " :,%=\t");
         if (token != NULL) thrElectronAttachment = atoi(token);
         token = strtok(NULL, " :,%=\t");
+        if (token != NULL) thrElectronLorentzAngle = atoi(token);
+        token = strtok(NULL, " :,%=\t");
         if (token != NULL) thrIonDissociation = atoi(token);
       } else if (strcmp(token, "Interp") == 0) {
         for (int i = 0; i < 13; i++) {
@@ -1395,8 +1397,8 @@ bool MediumGas::WriteGasFile(const std::string& filename) {
   }
   outFile << "\n";
   outFile << " Thresholds: " << std::setw(10) << thrElectronTownsend
-          << std::setw(10) << thrElectronAttachment << std::setw(10)
-          << thrIonDissociation << "\n";
+          << std::setw(10) << thrElectronAttachment << std::setw(10) << thrElectronLorentzAngle 
+          << std::setw(10) << thrIonDissociation << "\n";
   outFile << " Interp: ";
   for (int i = 0; i < 13; i++) {
     outFile << std::setw(5) << interpMeth[i];
