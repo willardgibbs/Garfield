@@ -9,7 +9,7 @@ HEADERS = $(wildcard $(INCDIR)/*.hh)
 SOURCES = $(wildcard $(SRCDIR)/*.cc)
 
 OBJECTS = $(subst $(SRCDIR),$(OBJDIR),$(SOURCES:.cc=.o))
-OBJECTS += $(OBJDIR)/magboltz.o 
+OBJECTS += $(OBJDIR)/magboltz.o
 #OBJECTS += $(OBJDIR)/GarfieldDict.o
 
 TARGETS = $(OBJECTS)
@@ -186,11 +186,11 @@ $(OBJDIR)/ComponentElmer.o: \
 	$(SRCDIR)/ComponentFieldMap.cc $(INCDIR)/ComponentFieldMap.hh 
 	@echo $@
 	@$(CXX) $(CFLAGS) $< -o $@
-$(OBJDIR)/ComponentComsol.o: \
-	$(SRCDIR)/ComponentComsol.cc $(INCDIR)/ComponentComsol.hh \
-	$(SRCDIR)/ComponentBase.cc $(INCDIR)/ComponentBase.hh
-	@echo $@
-	@$(CXX) $(CFLAGS) $< -o $@
+#$(OBJDIR)/ComponentComsol.o: \
+#	$(SRCDIR)/ComponentComsol.cc $(INCDIR)/ComponentComsol.hh \
+#	$(SRCDIR)/ComponentBase.cc $(INCDIR)/ComponentBase.hh
+#	@echo $@
+#	@$(CXX) $(CFLAGS) $< -o $@
 $(OBJDIR)/ComponentTcad2d.o: \
 	$(SRCDIR)/ComponentTcad2d.cc $(INCDIR)/ComponentTcad2d.hh \
 	$(SRCDIR)/ComponentBase.cc $(INCDIR)/ComponentBase.hh
