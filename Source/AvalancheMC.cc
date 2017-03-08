@@ -814,9 +814,8 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
   const unsigned int nPoints = m_drift.size();
   std::vector<double> alphas(nPoints, 0.);
   std::vector<double> etas(nPoints, 0.);
-  std::vector<double> lors(nPoints, 0.);
   // Compute the integrated Townsend and attachment coefficients.
-  if (!ComputeAlphaEtaLor(type, alphas, etas, lors)) return false;
+  if (!ComputeAlphaEta(type, alphas, etas)) return false;
 
   // Subdivision of a step
   const double probth = 0.01;
@@ -829,11 +828,10 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
     m_drift[i].nh = 0;
     m_drift[i].ni = 0;
     // Compute the number of subdivisions.
-    const int nDiv = std::max(int((alphas[i] + etas[i]+lors[i]) / probth), 1);
+    const int nDiv = std::max(int((alphas[i] + etas[i]) / probth), 1);
     // Compute the probabilities for gain and loss.
     const double palpha = std::max(alphas[i] / nDiv, 0.);
     const double peta = std::max(etas[i] / nDiv, 0.);
-    const double plor = std::max(lor[i] / nDiv, 0.);
     // Set initial number of electrons/ions.
     int neInit = ne;
     int niInit = ni;
@@ -907,8 +905,8 @@ bool AvalancheMC::ComputeGainLoss(const int type, int& status) {
   return true;
 }
 
-bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas,
-                                  std::vector<double>& etas, std::vector<double>& lors) {
+bool AvalancheMC::ComputeAlphaEta(const int type, std::vector<double>& alphas,
+                                  std::vector<double>& etas) {
   // Locations and weights for 6-point Gaussian integration
   const double tg[6] = {-0.932469514203152028, -0.661209386466264514,
                         -0.238619186083196909,  0.238619186083196909,
@@ -920,7 +918,6 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
   const unsigned int nPoints = m_drift.size();
   alphas.resize(nPoints, 0.);
   etas.resize(nPoints, 0.);
-  lors.resize(nPoints, 0.);
   if (nPoints < 2) return true;
   // Loop over the drift line.
   for (unsigned int i = 0; i < nPoints - 1; ++i) {
@@ -935,7 +932,6 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
     double vdz = 0.;
     alphas[i] = 0.;
     etas[i] = 0.;
-    lors[i] = 0.;
     for (unsigned int j = 0; j < 6; ++j) {
       const double x = m_drift[i].x + 0.5 * (1. + tg[j]) * delx;
       const double y = m_drift[i].y + 0.5 * (1. + tg[j]) * dely;
@@ -949,7 +945,7 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
       if (status != 0) {
         // Check if this point is the last but one.
         if (i < nPoints - 2) {
-          std::cerr << m_className << "::ComputeAlphaEtaLor:    Got status \n"
+          std::cerr << m_className << "::ComputeAlphaEta:    Got status \n"
                     << status << " at segment " << j + 1 
                     << "/6, drift point " << i + 1 << "/" << nPoints << ".\n";
           return false;
@@ -964,9 +960,9 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
         by *= Tesla2Internal;
         bz *= Tesla2Internal;
       }
-      // Get drift velocity, Townsend, attachment coefficients, Lorentz angles.
+      // Get drift velocity, Townsend and attachment coefficients.
       double vx = 0., vy = 0., vz = 0.;
-      double alpha = 0., eta = 0., lor = 0.;
+      double alpha = 0., eta = 0.;
       if (m_useTcadTrapping) {
         // Only one component with active traps and velocity map is assumed to
         // be attached to AvalancheMC.
@@ -982,7 +978,6 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
               trapMed->ElectronVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
             }
             trapMed->ElectronTownsend(ex, ey, ez, bx, by, bz, alpha);
-            trapMed->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, lor);
             trapCmp->ElectronAttachment(x, y, z, eta);
           } else {
             if (trapCmp->IsVelocityActive()) {
@@ -999,7 +994,6 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
           medium->ElectronVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
           medium->ElectronTownsend(ex, ey, ez, bx, by, bz, alpha);
           medium->ElectronAttachment(ex, ey, ez, bx, by, bz, eta);
-          medium->ElectronLorentzAngle(ex, ey, ez, bx, by, bz, lor);
         } else {
           medium->HoleVelocity(ex, ey, ez, bx, by, bz, vx, vy, vz);
           medium->HoleTownsend(ex, ey, ez, bx, by, bz, alpha);
@@ -1011,7 +1005,6 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
       vdz += wg[j] * vz;
       alphas[i] += wg[j] * alpha;
       etas[i] += wg[j] * eta;
-      lors[i] += wg[j] * lor;
     }
     // Compute the scaling factor for the projected length.
     double scale = 1.;
@@ -1030,14 +1023,13 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
     }
     alphas[i] *= 0.5 * del * scale;
     etas[i] *= 0.5 * del * scale;
-    lors[i] *= 0.5 * del * scale;
   }
 
   // Skip equilibration if projection has not been requested.
   if (!m_useEquilibration) return true;
   if (!Equilibrate(alphas)) {
     if (m_debug) {
-      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
+      std::cerr << m_className << "::ComputeAlphaEta:\n"
                 << "    Unable to even out alpha steps.\n"
                 << "    Calculation is probably inaccurate.\n";
     }
@@ -1045,15 +1037,7 @@ bool AvalancheMC::ComputeAlphaEtaLor(const int type, std::vector<double>& alphas
   }
   if (!Equilibrate(etas)) {
     if (m_debug) {
-      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
-                << "    Unable to even out alpha steps.\n"
-                << "    Calculation is probably inaccurate.\n";
-    }
-    return false;
-  }
-  if (!Equilibrate(lors)) {
-    if (m_debug) {
-      std::cerr << m_className << "::ComputeAlphaEtaLor:\n"
+      std::cerr << m_className << "::ComputeAlphaEta:\n"
                 << "    Unable to even out alpha steps.\n"
                 << "    Calculation is probably inaccurate.\n";
     }
