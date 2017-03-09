@@ -5625,8 +5625,8 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
                     << " T, angle: " << m_bAngles[j] << " rad\n";
         }
         RunMagboltz(m_eFields[i], m_bFields[k], m_bAngles[j], numColl, verbose, vx,
-                    vy, vz, difl, dift, alpha, eta, lor, vxerr, vyerr, vzerr,
-                    diflerr, difterr, alphaerr, etaerr, lorerr, alphatof);
+                    vy, vz, difl, dift, alpha, eta, vxerr, vyerr, vzerr,
+                    diflerr, difterr, alphaerr, etaerr, alphatof);
         double forcalc = vx*vx + vy*vy;
         double elvel = sqrt(forcalc + vz*vz);
         lor = acos(vz / elvel);
