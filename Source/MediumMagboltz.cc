@@ -5390,8 +5390,8 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
                                  const double btheta, const int ncoll,
                                  bool verbose, double& vx, double& vy,
                                  double& vz, double& dl, double& dt,
-                                 double& alpha, double& eta, double& vxerr,
-                                 double& vyerr, double& vzerr, double& dlerr,
+                                 double& alpha, double& eta,
+                                 double& vxerr, double& vyerr, double& vzerr, double& dlerr,
                                  double& dterr, double& alphaerr,
                                  double& etaerr, double& alphatof) {
 
@@ -5520,7 +5520,6 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
   alphaerr = Magboltz::ctwner_.alper;
   eta = Magboltz::ctowns_.att;
   etaerr = Magboltz::ctwner_.atter;
-
   // Print the results.
   if (m_debug) {
     std::cout << m_className << "::RunMagboltz:\n";
@@ -5576,6 +5575,7 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
   InitParamArrays(nEfields, nBfields, nAngles, tabElectronVelocityExB, 0.);
   InitParamArrays(nEfields, nBfields, nAngles, tabElectronDiffLong, 0.);
   InitParamArrays(nEfields, nBfields, nAngles, tabElectronDiffTrans, 0.);
+  InitParamArrays(nEfields, nBfields, nAngles, tabElectronLorentzAngle, 0.);
   InitParamArrays(nEfields, nBfields, nAngles, tabElectronTownsend, -30.);
   InitParamArrays(nEfields, nBfields, nAngles, m_tabTownsendNoPenning, -30.);
   InitParamArrays(nEfields, nBfields, nAngles, tabElectronAttachment, -30.);
@@ -5586,6 +5586,7 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
   m_hasElectronDiffLong = true;
   m_hasElectronDiffTrans = true;
   m_hasElectronAttachment = true;
+  m_hasElectronLorentzAngle = true;
 
   m_hasExcRates = false;
   m_tabExcRates.clear();
@@ -5608,10 +5609,10 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
 
   double vx = 0., vy = 0., vz = 0.;
   double difl = 0., dift = 0.;
-  double alpha = 0., eta = 0.;
+  double alpha = 0., eta = 0., lor = 0.;
   double vxerr = 0., vyerr = 0., vzerr = 0.;
   double diflerr = 0., difterr = 0.;
-  double alphaerr = 0., etaerr = 0.;
+  double alphaerr = 0., etaerr = 0., lorerr = 0;
   double alphatof = 0.;
 
   // Run through the grid of E- and B-fields and angles.
@@ -5624,13 +5625,19 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
                     << " T, angle: " << m_bAngles[j] << " rad\n";
         }
         RunMagboltz(m_eFields[i], m_bFields[k], m_bAngles[j], numColl, verbose, vx,
-                    vy, vz, difl, dift, alpha, eta, vxerr, vyerr, vzerr,
-                    diflerr, difterr, alphaerr, etaerr, alphatof);
+                    vy, vz, difl, dift, alpha, eta, lor, vxerr, vyerr, vzerr,
+                    diflerr, difterr, alphaerr, etaerr, lorerr, alphatof);
+        double forcalc = vx*vx + vy*vy;
+        double elvel = sqrt(forcalc + vz*vz);
+        lor = acos(vz / elvel);
+        double Ainlorerr = sqrt((forcalc)*(forcalc)*vzerr*vzerr + vx*vx*vz*vz*vxerr*vxerr + vy*vy*vz*vz*vyerr*vyerr);
+        lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc); 
         tabElectronVelocityE[j][k][i] = vz;
         tabElectronVelocityExB[j][k][i] = vy;
         tabElectronVelocityB[j][k][i] = vx;
         tabElectronDiffLong[j][k][i] = difl;
         tabElectronDiffTrans[j][k][i] = dift;
+        tabElectronLorentzAngle[j][k][i] = lor;
         if (alpha > 0.) {
           tabElectronTownsend[j][k][i] = log(alpha);
           m_tabTownsendNoPenning[j][k][i] = log(alpha);
