@@ -5390,18 +5390,18 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
                                  const double btheta, const int ncoll,
                                  bool verbose, double& vx, double& vy,
                                  double& vz, double& dl, double& dt,
-                                 double& alpha, double& eta,
+                                 double& alpha, double& eta, double& lor,
                                  double& vxerr, double& vyerr, double& vzerr, double& dlerr,
                                  double& dterr, double& alphaerr,
-                                 double& etaerr, double& alphatof) {
+                                 double& etaerr, double& alphatof, double& lorerr) {
 
   // Initialize the values.
   vx = vy = vz = 0.;
   dl = dt = 0.;
-  alpha = eta = alphatof = 0.;
+  alpha = eta = alphatof = lor = 0.;
   vxerr = vyerr = vzerr = 0.;
   dlerr = dterr = 0.;
-  alphaerr = etaerr = 0.;
+  alphaerr = etaerr = lorerr = 0.;
 
   // Set input parameters in Magboltz common blocks.
   Magboltz::inpt_.nGas = m_nComponents;
@@ -5520,6 +5520,15 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
   alphaerr = Magboltz::ctwner_.alper;
   eta = Magboltz::ctowns_.att;
   etaerr = Magboltz::ctwner_.atter;
+  // Calculate the Lorentz angle
+  double forcalc = vx*vx + vy*vy;
+  double elvel = sqrt(forcalc + vz*vz);
+  if ( forcalc != 0 || elvel!= 0) {
+    lor = acos(vz / elvel);
+    double Ainlorerr = sqrt((forcalc)*(forcalc)*vzerr*vzerr + vx*vx*vz*vz*vxerr*vxerr + vy*vy*vz*vz*vyerr*vyerr);
+    lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc);
+  }
+
   // Print the results.
   if (m_debug) {
     std::cout << m_className << "::RunMagboltz:\n";
@@ -5557,6 +5566,9 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
                 << std::setw(10) << std::setprecision(6) << eta << " cm-1  +/- "
                 << std::setprecision(2) << etaerr << "%\n";
     }
+    std::cout << "      Lorentz Angle:           " << std::right
+                << std::setw(10) << std::setprecision(6) << lor << std::setprecision(2)
+                << lorerr << "%\n";
   }
 }
 
@@ -5625,13 +5637,8 @@ void MediumMagboltz::GenerateGasTable(const int numColl, const bool verbose) {
                     << " T, angle: " << m_bAngles[j] << " rad\n";
         }
         RunMagboltz(m_eFields[i], m_bFields[k], m_bAngles[j], numColl, verbose, vx,
-                    vy, vz, difl, dift, alpha, eta, vxerr, vyerr, vzerr,
-                    diflerr, difterr, alphaerr, etaerr, alphatof);
-        double forcalc = vx*vx + vy*vy;
-        double elvel = sqrt(forcalc + vz*vz);
-        lor = acos(vz / elvel);
-        double Ainlorerr = sqrt((forcalc)*(forcalc)*vzerr*vzerr + vx*vx*vz*vz*vxerr*vxerr + vy*vy*vz*vz*vyerr*vyerr);
-        lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc); 
+                    vy, vz, difl, dift, alpha, eta, lor, vxerr, vyerr, vzerr,
+                    diflerr, difterr, alphaerr, etaerr, alphatof, lorerr);
         tabElectronVelocityE[j][k][i] = vz;
         tabElectronVelocityExB[j][k][i] = vy;
         tabElectronVelocityB[j][k][i] = vx;
