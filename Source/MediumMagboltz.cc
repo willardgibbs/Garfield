@@ -5525,8 +5525,8 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
   double elvel = sqrt(forcalc + vz*vz);
   if ( forcalc != 0 || elvel!= 0) {
     lor = acos(vz / elvel);
-    double Ainlorerr = sqrt((forcalc)*(forcalc)*vzerr*vzerr + vx*vx*vz*vz*vxerr*vxerr + vy*vy*vz*vz*vyerr*vyerr);
-    lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc);
+    double Ainlorerr = sqrt((forcalc)*(forcalc)*vz*vz*vzerr*vzerr + vx*vx*vx*vx*vz*vz*vxerr*vxerr + vy*vy*vy*vy*vz*vz*vyerr*vyerr);
+    lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc) / lor;
   }
 
   // Print the results.
