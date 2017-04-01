@@ -5523,10 +5523,10 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
   // Calculate the Lorentz angle
   double forcalc = vx*vx + vy*vy;
   double elvel = sqrt(forcalc + vz*vz);
-  if ( forcalc != 0 || elvel!= 0) {
+  if ( forcalc != 0 && elvel != 0) {
     lor = acos(vz / elvel);
-    double Ainlorerr = sqrt((forcalc)*(forcalc)*vz*vz*vzerr*vzerr + vx*vx*vx*vx*vz*vz*vxerr*vxerr + vy*vy*vy*vy*vz*vz*vyerr*vyerr);
-    lorerr = Ainlorerr/ elvel / elvel / sqrt (forcalc) / lor;
+    double Ainlorerr = sqrt((forcalc)*(forcalc)*vzerr*vzerr + vx*vx*vx*vx*vxerr*vxerr + vy*vy*vy*vy*vyerr*vyerr);
+    lorerr = vz * Ainlorerr/ elvel / elvel / sqrt (forcalc) / lor;
   }
 
   // Print the results.
@@ -5567,7 +5567,7 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
                 << std::setprecision(2) << etaerr << "%\n";
     }
     std::cout << "      Lorentz Angle:           " << std::right
-                << std::setw(10) << std::setprecision(6) << lor << " rad  +/- " 
+                << std::setw(10) << std::setprecision(6) << (lor * PI / 180.) << " grad  +/- " 
                 << std::setprecision(2) << lorerr << "%\n";
   }
 }
