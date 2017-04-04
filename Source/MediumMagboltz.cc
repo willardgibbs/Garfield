@@ -5567,7 +5567,7 @@ void MediumMagboltz::RunMagboltz(const double e, const double bmag,
                 << std::setprecision(2) << etaerr << "%\n";
     }
     std::cout << "      Lorentz Angle:           " << std::right
-                << std::setw(10) << std::setprecision(6) << (lor * PI / 180.) << " grad  +/- " 
+                << std::setw(10) << std::setprecision(6) << (lor / Pi * 180.) << " grad  +/- " 
                 << std::setprecision(2) << lorerr << "%\n";
   }
 }
